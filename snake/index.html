@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        /* Basic styles for the game */
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Snake Game</h2>
+    <h3>Score: <span id="score">0</span></h3>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script src="main.js"></script>
+
+    <input type="range" min="100" max="1000" value="100" step="100" oninput="game.speed = this.value" placeholder="Speed" />   
+    <label for="speedSlider">Speed:</label>
+</body>
+</html> 
