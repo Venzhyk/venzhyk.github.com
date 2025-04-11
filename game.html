@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spelling Game</title>
+<style>
+  body {
+    background: linear-gradient(45deg, yellow, orange);
+    font-family: 'Arial', sans-serif;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .game-container {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+  }
+  textarea {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    padding: 10px;
+    resize: vertical;
+  }
+  .masked-word {
+    font-size: 36px;
+    margin-bottom: 20px;
+  }
+  .clue {
+    font-size: 18px;
+    margin-bottom: 20px;
+  }
+  input[type="text"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    font-size: 20px;
+  }
+  .feedback {
+    font-size: 18px;
+    margin-top: 10px;
+    padding: 5px;
+  }
+  #startGameButton {
+    background-color: orange;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container" id="startScreen">
+  <h1>Spelling Game</h1>
+  
+  <textarea placeholder="Paste your words here (separated by commas, line breaks, or both)"></textarea>
+  <button id="startGameButton">Start Game</button>
+  
+</div>
+
+<div class="game-container" id="playScreen" style="display: none;">
+  <h1>Spell the Word!</h1>
+  
+  <div class="masked-word" id="maskedWord"></div>
+  <div class="clue" id="clue"></div>
+  <input type="text" id="userInput" placeholder="Type the word">
+  <div class="feedback" id="feedback"></div>
+
+</div>
+
+<div class="game-container" id="endScreen" style="display: none;">
+  <h1>Finish!</h1>
+  
+  <p>Your score: <span id="score">0</span></p>
+  <button id="restartButton">Start again</button>
+</div>
+
+<script>
+async function fetchDefinition(word) {
+  const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${word}`);
+  const data = await response.json();
+  return data.extract;
+}
+
+function maskWord(word, numCharsToHide = 2) {
+  const indicesToHide = [];
+  while (indicesToHide.length < numCharsToHide) {
+    const index = Math.floor(Math.random() * word.length);
+    if (!indicesToHide.includes(index)) {
+      indicesToHide.push(index);
+    }
+  }
+  return word.split('').map((char, i) => indicesToHide.includes(i) ? '_' : char).join('');
+}
+
+function highlightClue(clue, targetWord) {
+  const regex = new RegExp(`\\b${targetWord}\\b`, 'gi');
+  return clue.replace(regex, '____');
+}
+
+let wordsList = [];
+let currentScore = 0;
+
+async function loadNextWord() {
+  if (wordsList.length === 0) {
+    showEndScreen();
+    return;
+  }
+
+  const targetWord = wordsList.shift().toLowerCase();
+  document.getElementById('maskedWord').innerText = maskWord(targetWord);
+  
+  let clueText = await fetchDefinition(targetWord);
+  if (!clueText) clueText = `No definition available for ${targetWord}.`;
+  document.getElementById('clue').innerText = highlightClue(clueText, targetWord);
+
+  document.getElementById('userInput').value = '';
+  document.getElementById('feedback').innerText = '';
+
+  const userInputField = document.getElementById('userInput');
+  userInputField.focus();
+  
+  userInputField.addEventListener('input', function onInputChange() {
+    if (userInputField.value.toLowerCase() === targetWord) {
+      document.getElementById('feedback').style.color = 'green';
+      document.getElementById('feedback').innerText = 'Correct!';
+      currentScore++;
+      setTimeout(() => loadNextWord(), 1000);
+    } else {
+      document.getElementById('feedback').style.color = 'red';
+      document.getElementById('feedback').innerText = 'Incorrect, try again!';
+    }
+  });
+}
+
+function showEndScreen() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('playScreen').style.display = 'none';
+  document.getElementById('endScreen').style.display = 'block';
+  document.getElementById('score').innerText = currentScore;
+}
+
+document.getElementById('startGameButton').addEventListener('click', function() {
+  const wordsInput = document.querySelector('.game-container textarea');
+  wordsList = wordsInput.value.split(/[\s,]+/).filter(word => word.length > 0);
+  if (wordsList.length === 0) {
+    alert("Please enter some words.");
+    return;
+  }
+  
+  wordsList = wordsList.map(word => word.trim());
+  currentScore = 0;
+
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('playScreen').style.display = 'block';
+
+  loadNextWord();
+});
+
+document.getElementById('restartButton').addEventListener('click', function() {
+  location.reload();
+});
+</script>
+
+</body>
+</html>
